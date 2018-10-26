@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf8">
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <style>
+    .axis text {
+      fill: black;
+    }
+  </style>
+</head>
+
+<body>
+  <svg id="chart" viewBox="0 0 1000 500" width="1000" height="500"></svg>
+
+  <script>
+    var data = [
+      { letter: "A", english: .08167, french: .07636, german: .06516 },
+      { letter: "B", english: .01492, french: .00901, german: .01886 },
+      { letter: "C", english: .02782, french: .03260, german: .02732 },
+      { letter: "D", english: .04253, french: .05076, german: .05076 },
+      { letter: "E", english: .12702, french: .14715, german: .16396 },
+      { letter: "F", english: .02288, french: .01066, german: .01656 },
+      { letter: "G", english: .02015, french: .00866, german: .03009 },
+      { letter: "H", english: .06094, french: .00737, german: .04577 },
+      { letter: "I", english: .06966, french: .07529, german: .06550 },
+      { letter: "J", english: .00153, french: .00613, german: .00268 },
+      { letter: "K", english: .00772, french: .00049, german: .01417 },
+      { letter: "L", english: .04025, french: .05456, german: .03437 },
+      { letter: "M", english: .02406, french: .02968, german: .02534 },
+      { letter: "N", english: .06749, french: .07095, german: .09776 },
+      { letter: "O", english: .07507, french: .05796, german: .02594 },
+      { letter: "P", english: .01929, french: .02521, german: .00670 },
+      { letter: "Q", english: .00095, french: .01362, german: .00018 },
+      { letter: "R", english: .05987, french: .06693, german: .07003 },
+      { letter: "S", english: .06327, french: .07948, german: .07270 },
+      { letter: "T", english: .09056, french: .07244, german: .06154 },
+      { letter: "U", english: .02758, french: .06311, german: .04166 },
+      { letter: "V", english: .00978, french: .01838, german: .00846 },
+      { letter: "W", english: .02360, french: .00074, german: .01921 },
+      { letter: "X", english: .00150, french: .00427, german: .00034 },
+      { letter: "Y", english: .01974, french: .00128, german: .00039 },
+      { letter: "Z", english: .00074, french: .00326, german: .01134 }
+    ];
+    var languages = ['English', 'French', 'German'];
+
+    var chart = d3.select('#chart');
+    var margin = { top: 20, right: 20, bottom: 30, left: 50 };
+    var width = chart.attr('width') - margin.left - margin.right;
+    var height = chart.attr('height') - margin.top - margin.bottom;
+
+    var x0 = d3.scaleBand()
+      .rangeRound([0, width])
+      .domain(data.map((d) => d.letter))
+      .paddingInner(0.25);
+
+    var x1 = d3.scaleBand()
+      .rangeRound([0, x0.bandwidth()])
+      .domain(languages)
+      .padding(0.1);
+
+    var y = d3.scaleLinear()
+      .rangeRound([height, 0])
+      .domain([0, 0.2]);
+
+    var z = d3.scaleOrdinal().range(['#0074D9', '#39CCCC', '#2ECC40']);
+
+    var group = chart.append('g')
+      .attr('transform', 'translate(' + margin.left + ', ' + margin.top + ')');
+
+    group.append('g')
+      .attr('class', 'axis x-axis')
+      .attr('transform', 'translate(0, ' + height + ')')
+      .call(d3.axisBottom(x0));
+
+    group.append('g')
+      .attr('class', 'axis y-axis')
+      .call(d3.axisLeft(y).ticks(10, '%'))
+      .append('text')
+      .attr('transform', 'rotate(-90)')
+      .attr('dx', -height / 2)
+      .attr('dy', '-3.75em')
+      .attr('text-anchor', 'middle')
+      .text('Frequency');
+
+    group.selectAll('g.letter')
+      .data(data)
+      .enter()
+      .append('g')
+      .attr('class', 'letter')
+      .attr('transform', (d) => 'translate(' + x0(d.letter) + ', 0)')
+      .selectAll('rect')
+      .data((d) => languages.map((key) => ({
+        key, value: d[key.toLowerCase()]
+      })))
+      .enter()
+      .append('rect')
+      .attr('x', (d) => x1(d.key))
+      .attr('y', (d) => y(d.value))
+      .attr('fill', (d) => z(d.key))
+      .attr('width', x1.bandwidth())
+      .attr('height', (d) => height - y(d.value));
+
+    chart.attr('width', '100%').attr('height', null);
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf8">
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <style>
+    .label {
+      fill: black;
+      font-family: system-ui, sans-serif;
+      text-anchor: middle;
+    }
+  </style>
+</head>
+
+<body>
+  <svg id="chart" width="500" height="500"></svg>
+  <script>
+    var data = [
+      { age: '0-18', value: 0.24 },
+      { age: '19-25', value: 0.09 },
+      { age: '26-34', value: 0.12 },
+      { age: '35-54', value: 0.26 },
+      { age: '55-64', value: 0.17 },
+      { age: '65+', value: 0.15 },
+    ];
+
+    var chart = d3.select('#chart');
+    var width = chart.attr('width');
+    var height = chart.attr('height');
+
+    var group = chart.append('g').attr('transform', 'translate(' + width / 2 + ',' + height / 2 + ')');
+
+    var radius = Math.min(width, height) / 2;
+
+    var pie = d3.pie()
+      .sort(null)
+      .value((d) => d.value);
+
+    var path = d3.arc()
+      .padAngle(0.02)
+      .outerRadius(radius)
+      .innerRadius(radius / 1.5);
+
+    var label = d3.arc()
+      .outerRadius(radius / 1.5)
+      .innerRadius(radius / 2.5);
+
+    var colorScale = d3.scaleOrdinal().range(d3['schemeCategory10']);
+
+    var arc = group.selectAll('.arc')
+      .data(pie(data))
+      .enter()
+      .append('g')
+      .attr('class', 'arc');
+
+    arc.append('path')
+      .attr('d', path)
+      .attr('fill', (d) => colorScale(d.data.age));
+
+    arc.append('text')
+      .attr('class', 'label')
+      .attr('transform', (d) => 'translate(' + label.centroid(d) + ')')
+      .attr('dy', '0.5em')
+      .text((d) => d.data.age);
+  </script>
+</body>
+
+</html>

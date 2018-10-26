@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+
+<head>
+  <meta charset="utf-8">
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <style>
+    .line {
+      fill: none;
+    }
+
+    .line.temperature {
+      stroke: red;
+    }
+
+    .line.humidity {
+      stroke: blue;
+    }
+
+    .axis text {
+      fill: black;
+    }
+
+    .axis.temperature text.label {
+      fill: red;
+    }
+
+    .axis.humidty text.label {
+      fill: blue;
+    }
+  </style>
+</head>
+
+<body>
+  <svg id="chart" viewBox="0 0 1000 500" width="1000" height="500"></svg>
+  <script>
+    var chart = d3.select('#chart');
+    var margin = { top: 20, right: 50, bottom: 80, left: 50 };
+    var width = chart.attr('width') - margin.left - margin.right;
+    var height = chart.attr('height') - margin.top - margin.bottom;
+
+    d3.dsv(';', 'weather-data-vie.csv', (d) => ({
+      date: new Date(d['Date'].replace(/'/g, '')),
+      humidity: +d['Humidity (in %)'],
+      temperature: +d['Temperature (in °C)']
+    })).then((data) => {
+      var x = d3.scaleTime()
+        .rangeRound([0, width])
+        .domain(d3.extent(data, (d) => d.date));
+
+      var y1 = d3.scaleLinear()
+        .rangeRound([height, 0]);
+
+      var y2 = d3.scaleLinear()
+        .rangeRound([height, 0])
+        .domain(d3.extent(data, (d) => d.temperature));
+
+      var group = chart.append('g')
+        .attr('transform', 'translate(' + margin.left + ', ' + margin.top + ')');
+
+      group.append('g')
+        .attr('class', 'axis x-axis')
+        .attr('transform', 'translate(0, ' + height + ')')
+        .call(d3.axisBottom(x).tickFormat(d3.timeFormat('%m / %Y')))
+        .selectAll('text')
+        .style('text-anchor', 'end')
+        .attr('dx', '-.8em')
+        .attr('dy', '.15em')
+        .attr('transform', 'rotate(-65)');
+
+      group.append('g')
+        .attr('class', 'axis y-axis humidity')
+        .call(d3.axisLeft(y1).ticks(10, '%'))
+        .append('text')
+        .attr('class', 'label')
+        .attr('transform', 'rotate(-90)')
+        .attr('dx', -height / 2)
+        .attr('dy', '-3.75em')
+        .attr('text-anchor', 'middle')
+        .text('Humidity in %');
+
+      group.append('g')
+        .attr('class', 'axis y-axis temperature')
+        .call(d3.axisRight(y2))
+        .attr('transform', 'translate(' + width + ', 0)')
+        .append('text')
+        .attr('class', 'label')
+        .attr('transform', 'rotate(-90)')
+        .attr('dx', -height / 2)
+        .attr('dy', '3.75em')
+        .attr('text-anchor', 'middle')
+        .text('Temperature in ºC');
+
+      group.append('path')
+        .datum(data)
+        .attr('class', 'line humidity')
+        .attr('style', 'opacity: 0.1')
+        .attr('d',
+          d3.line()
+            .x((d) => x(d.date))
+            .y((d) => y1(d.humidity))
+        );
+
+      group.append('path')
+        .datum(data)
+        .attr('class', 'line temperature')
+        .attr('style', 'opacity: 0.1')
+        .attr('d',
+          d3.line()
+            .x((d) => x(d.date))
+            .y((d) => y2(d.temperature))
+        );
+
+      let convolute = (data, kernel, accessor) => {
+        let center = Math.floor(kernel.length / 2);
+        let clamp = (i, [lower, upper]) => Math.min(Math.max(i, lower), upper);
+        let bounds = [0, data.length - 1];
+
+        return data.map((d, i) => Object.assign({
+          smoothed: kernel.reduce((acc, weight, k) => (
+            acc + weight * accessor(data[clamp(i + (k - center), bounds)])
+          ))
+        }, d));
+      };
+
+      var kernel = new Array(201).fill(0).map((_, i, arr) => {
+        let u = 3 * (2.0 * i - (arr.length - 1)) / (arr.length - 1);
+        return 1.0 / Math.sqrt(2 * Math.PI) * Math.exp(-0.5 * u * u);
+      }).map((k, _, arr) => k / d3.sum(arr));
+      var temperature = convolute(data, kernel, (d) => d.temperature);
+      var humidity = convolute(data, kernel, (d) => d.humidity);
+
+      group.append('path')
+        .datum(humidity)
+        .attr('class', 'line humidity')
+        .attr('d',
+          d3.line()
+            .x((d) => x(d.date))
+            .y((d) => y1(d.smoothed))
+        );
+
+      group.append('path')
+        .datum(temperature)
+        .attr('class', 'line temperature')
+        .attr('d',
+          d3.line()
+            .x((d) => x(d.date))
+            .y((d) => y2(d.smoothed))
+        );
+    });
+
+    chart.attr('width', '100%').attr('height', null);
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf8">
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <style>
+    .axis text {
+      fill: black;
+    }
+  </style>
+</head>
+
+<body>
+  <svg id="chart" viewBox="0 0 1000 500" width="1000" height="500"></svg>
+  <script>
+    var chart = d3.select('#chart');
+    var margin = { top: 20, right: 20, bottom: 80, left: 50 };
+    var width = chart.attr('width') - margin.left - margin.right;
+    var height = chart.attr('height') - margin.top - margin.bottom;
+
+    d3.json('response-timing.json').then((data) => data.map((d) => ({
+      date: new Date(d.timestamp),
+      ttfb: d.ttfb,
+      total: d.total
+    }))).then((data) => {
+      var x = d3.scaleTime()
+        .rangeRound([0, width])
+        .domain(d3.extent(data, (d) => d.date));
+
+      var y = d3.scaleLinear()
+        .rangeRound([height, 0])
+        .domain([0, d3.max(data, (d) => d.total)]);
+
+      var z = d3.scaleOrdinal().range(['#0074D9', '#2ECC40']);
+
+      var group = chart
+        .append('g')
+        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+      group.append('g')
+        .attr('class', 'axis x-axis')
+        .attr('transform', 'translate(0, ' + height + ')')
+        .call(d3.axisBottom(x).tickFormat(d3.timeFormat('%Y-%m-%d')))
+        .selectAll('text')
+        .style('text-anchor', 'end')
+        .attr('dx', '-.8em')
+        .attr('dy', '.15em')
+        .attr('transform', 'rotate(-65)');
+
+      group.append('g')
+        .attr('class', 'axis y-axis humidity')
+        .call(d3.axisLeft(y))
+        .append('text')
+        .attr('class', 'label')
+        .attr('transform', 'rotate(-90)')
+        .attr('dx', -height / 2)
+        .attr('dy', '-3.75em')
+        .attr('text-anchor', 'middle')
+        .text('Milliseconds');
+
+      var stack = d3.stack();
+      var area = d3.area()
+        .x((d) => x(d.data.date))
+        .y0((d) => y(d[0]))
+        .y1((d) => y(d[1] - d[0]));
+
+      var keys = ['ttfb', 'total'];
+      stack.keys(keys);
+      z.domain(keys);
+
+      var layer = group.selectAll('.area')
+        .data(stack(data))
+        .enter()
+        .append('path')
+        .attr('class', 'area')
+        .style('fill', (d) => z(d.key))
+        .attr('d', area);
+    });
+
+    chart.attr('width', '100%').attr('height', null);
+  </script>
+</body>
+
+</html>
