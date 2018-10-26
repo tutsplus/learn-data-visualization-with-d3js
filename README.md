@@ -8,7 +8,7 @@ In this course, you'll get a complete introduction to the D3.js library. You'll 
 
 ## Source Files Description:
 
-The this repo contains all the examples from the course.
+This repo contains all the examples from the course.
 
 ------
 
